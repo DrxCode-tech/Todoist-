@@ -1,58 +1,54 @@
-const CACHE_NAME = 'todo-pwa-cache-v1.1';
+const CACHE_NAME = 'todoist-cache-v2';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
-  '/styles.css',
+  '/style.css',
   '/app.js',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
 ];
 
-// Install event: cache files
-self.addEventListener('install', evt => {
-  evt.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('[ServiceWorker] Caching app shell');
-      return cache.addAll(FILES_TO_CACHE);
-    })
-  );
+// Install: cache static files
+self.addEventListener('install', event => {
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
+  );
 });
 
-// Activate event: clean old caches
-self.addEventListener('activate', evt => {
-  evt.waitUntil(
-    caches.keys().then(keyList =>
+// Activate: clean old caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
       Promise.all(
-        keyList.map(key => {
+        keys.map(key => {
           if (key !== CACHE_NAME) {
-            console.log('[ServiceWorker] Removing old cache', key);
             return caches.delete(key);
           }
         })
       )
     )
   );
-  self.clients.claim();
+  return self.clients.claim();
 });
 
-// Fetch event: Network First strategy
-self.addEventListener('fetch', evt => {
-  if (evt.request.method !== 'GET') return;
+// Fetch: network-first, then cache fallback
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
 
-  evt.respondWith(
-    fetch(evt.request)
-      .then(response => {
-        // Put a copy of the response in cache
+  event.respondWith(
+    fetch(event.request)
+      .then(networkResponse => {
+        // Cache the new response
         return caches.open(CACHE_NAME).then(cache => {
-          cache.put(evt.request, response.clone());
-          return response;
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
         });
       })
       .catch(() => {
-        // If network fails, try cache
-        return caches.match(evt.request);
+        // If network fails, return cached version
+        return caches.match(event.request);
       })
   );
 });
