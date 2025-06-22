@@ -1,6 +1,8 @@
 const form = document.getElementById('todo-form');
 const input = document.getElementById('todo-input');
 const list = document.getElementById('todo-list');
+alert('working');
+
 
 function saveTodos(todos) {
   localStorage.setItem('todos', JSON.stringify(todos));
