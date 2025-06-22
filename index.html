@@ -6,17 +6,21 @@
   <title>Simple PWA To-Do List</title>
 
   <!-- Link to CSS -->
-  <link rel="stylesheet" href="styles.css?v=1.0.1" />
+  <link rel="stylesheet" href="style.css?v=1.1.1" />
 
   <!-- Manifest for PWA -->
   <link rel="manifest" href="manifest.json" />
 
-  <!-- Add theme color -->
+  <!-- Theme color -->
   <meta name="theme-color" content="#317EFB"/>
 </head>
 <body>
   <div class="app">
     <h1>My To-Do List</h1>
+    
+    <!-- Install Button -->
+    <button id="install-btn" style="display:none;">Install App</button>
+
     <form id="todo-form">
       <input type="text" id="todo-input" placeholder="Add new task..." autocomplete="off" required />
       <button type="submit">Add</button>
@@ -24,17 +28,51 @@
     <ul id="todo-list"></ul>
   </div>
 
-  <script src="app.js?v=1.01"></script>
+  <script src="app.js?v=1.1.1"></script>
 
   <script>
-    // Register the service worker
+    // Register service worker
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(reg => console.log('Service Worker registered.', reg))
-          .catch(err => console.log('Service Worker registration failed:', err));
-      });
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => {
+          console.log('Service Worker registered:', reg);
+
+          // Listen for updates
+          reg.onupdatefound = () => {
+            const newWorker = reg.installing;
+            newWorker.onstatechange = () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('New update found! Refresh to apply.');
+                // Optionally alert user
+              }
+            };
+          };
+        })
+        .catch(err => console.error('Service Worker registration failed:', err));
     }
+
+    // PWA Install prompt
+    let deferredPrompt;
+    const installBtn = document.getElementById('install-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'inline-block';
+
+      installBtn.addEventListener('click', () => {
+        installBtn.style.display = 'none';
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choiceResult => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          } else {
+            console.log('User dismissed the install prompt');
+          }
+          deferredPrompt = null;
+        });
+      });
+    });
   </script>
 </body>
 </html>
