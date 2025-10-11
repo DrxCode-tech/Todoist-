@@ -1,44 +1,44 @@
-const CACHE_NAME = 'adex-cache-v3.2';
+// ✅ Version bump here
+const CACHE_NAME = 'adex-cache-v4';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
-  '/style.css',
-  '/app.js',
+  '/ADEXsign.html',
+  '/ADEXlogin.html',
+  '/V3ADEX.html',
+  '/V3ADEX.css',
+  '/V3ADEX.js',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
 ];
 
-// ✅ Install: Cache static files immediately
+// ✅ Install: cache all required assets
 self.addEventListener('install', event => {
-  console.log('[Service Worker] Installing and caching app shell...');
+  console.log('[Service Worker] Installing new version...');
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(FILES_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
   );
 });
 
-// ✅ Activate: Remove old caches and take control immediately
+// ✅ Activate: remove old caches immediately
 self.addEventListener('activate', event => {
-  console.log('[Service Worker] Activating new version...');
+  console.log('[Service Worker] Activating and cleaning old caches...');
   event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            console.log('[Service Worker] Deleting old cache:', key);
-            return caches.delete(key);
-          }
-        })
-      );
-    })
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => {
+        if (key !== CACHE_NAME) {
+          console.log('[Service Worker] Deleting old cache:', key);
+          return caches.delete(key);
+        }
+      }))
+    )
   );
-  return self.clients.claim(); // Take control of open pages
+  return self.clients.claim();
 });
 
-// ✅ Fetch: Offline-first strategy with cache update
+// ✅ Fetch: Offline-first approach
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
@@ -52,7 +52,6 @@ self.addEventListener('fetch', event => {
           return networkResponse;
         })
         .catch(() => cachedResponse);
-
       return cachedResponse || fetchPromise;
     })
   );
