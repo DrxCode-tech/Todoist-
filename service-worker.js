@@ -2,7 +2,7 @@ const CACHE_NAME = 'adex-cache-v3.1';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
-  '/styles.css',
+  '/style.css',
   '/app.js',
   '/manifest.json',
   '/icon-192.png',
