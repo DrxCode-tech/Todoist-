@@ -1,54 +1,59 @@
-const CACHE_NAME = 'todoist-cache-v8';
+const CACHE_NAME = 'adex-cache-v3';
 const FILES_TO_CACHE = [
   '/',
   '/index.html',
-  '/style.css',
+  '/styles.css',
   '/app.js',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
 ];
 
-// Install: cache static files
+// ✅ Install: Cache static files immediately
 self.addEventListener('install', event => {
+  console.log('[Service Worker] Installing and caching app shell...');
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(FILES_TO_CACHE);
+    })
   );
 });
 
-// Activate: clean old caches
+// ✅ Activate: Remove old caches and take control immediately
 self.addEventListener('activate', event => {
+  console.log('[Service Worker] Activating new version...');
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
+    caches.keys().then(keys => {
+      return Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME) {
+            console.log('[Service Worker] Deleting old cache:', key);
             return caches.delete(key);
           }
         })
-      )
-    )
+      );
+    })
   );
-  return self.clients.claim();
+  return self.clients.claim(); // Take control of open pages
 });
 
-// Fetch: network-first, then cache fallback
+// ✅ Fetch: Offline-first strategy with cache update
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    fetch(event.request)
-      .then(networkResponse => {
-        // Cache the new response
-        return caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, networkResponse.clone());
+    caches.match(event.request).then(cachedResponse => {
+      const fetchPromise = fetch(event.request)
+        .then(networkResponse => {
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, networkResponse.clone());
+          });
           return networkResponse;
-        });
-      })
-      .catch(() => {
-        // If network fails, return cached version
-        return caches.match(event.request);
-      })
+        })
+        .catch(() => cachedResponse);
+
+      return cachedResponse || fetchPromise;
+    })
   );
 });
